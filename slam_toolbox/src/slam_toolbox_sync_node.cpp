@@ -19,11 +19,29 @@
 
 #include "slam_toolbox/slam_toolbox_sync.hpp"
 
+void KillerCallback(const std_msgs::String::ConstPtr& msg){
+  if(msg->data == "kill"){
+    //std::string tmp = "kill -9 " + boost::to_string(getppid());
+    //std::string tmp2 = "kill -9 " + boost::to_string(getpid());
+    //std::cout << tmp << std::endl;
+    system("fg %1");
+    // kill(getppid(),SIGINT);
+    //system(tmp.c_str());
+    //system(tmp2.c_str());    
+    system("rosnode kill /slam_toolbox || pkill -9 slam");
+    //ros::shutdown();
+    exit(0);
+  }
+}
+
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "slam_toolbox");
   ros::NodeHandle nh("~");
   ros::spinOnce();
+
+  ros::Subscriber killer_sub;
+  killer_sub = nh.subscribe("/killer", 1, &KillerCallback);
 
   int stack_size;
   if (nh.getParam("stack_size_to_use", stack_size))
