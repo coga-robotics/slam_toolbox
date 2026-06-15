@@ -17,8 +17,22 @@
 
 /* Author: Steven Macenski */
 
+#include <cstdlib>
 #include <memory>
 #include "slam_toolbox/slam_toolbox_sync.hpp"
+#include "std_msgs/msg/string.hpp"
+
+void KillerCallback(const std_msgs::msg::String::SharedPtr msg)
+{
+  if (msg->data == "kill") {
+    // Forcefully terminate the slam_toolbox process, mirroring the ROS1 behavior.
+    if (std::system("pkill -9 slam") != 0) {
+      // pkill failure is non-fatal; we still exit below.
+    }
+    rclcpp::shutdown();
+    std::exit(0);
+  }
+}
 
 int main(int argc, char ** argv)
 {
@@ -42,6 +56,10 @@ int main(int argc, char ** argv)
 
   rclcpp::NodeOptions options;
   auto sync_node = std::make_shared<slam_toolbox::SynchronousSlamToolbox>(options);
+
+  auto killer_sub = sync_node->create_subscription<std_msgs::msg::String>(
+    "/killer", 1, &KillerCallback);
+
   sync_node->configure();
   sync_node->loadPoseGraphByParams();
   rclcpp::spin(sync_node->get_node_base_interface());
